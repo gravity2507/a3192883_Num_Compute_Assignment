@@ -5,7 +5,9 @@ class Pipeline:
         if not steps:raise ValueError("At least one step required")
         self.steps=steps
     def fit(self,X,y=None):
-        for name,step in self.steps[:-1]:X=step.fit_transform(X)
+        for name,step in self.steps[:-1]:
+            step.fit(X)
+            X=step.transform(X)
         last=self.steps[-1][1]
         if hasattr(last,"predict"):last.fit(X,y)
         else:last.fit(X)
