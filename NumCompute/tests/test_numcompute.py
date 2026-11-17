@@ -86,4 +86,36 @@ class TestNumCompute(unittest.TestCase):
         X=np.ones((4,2));self.assertEqual(len(DecisionTreeClassifier().fit(X,self.y).predict(X)),4)
     def test_50_nan_rank(self):self.assertTrue(np.isnan(rank([1,np.nan])[1]))
 
+    def test_51_tiny_nonconstant_scaler(self):
+        x = np.array([[1e-16], [2e-16], [3e-16]])
+        result = StandardScaler().fit_transform(x)
+        np.testing.assert_allclose(np.var(result, axis=0), [1.0], atol=1e-12)
+
+    def test_52_large_coordinate_distance(self):
+        self.assertAlmostEqual(distances([[1e9]], [[1e9 + 1]])[0, 0], 1.0)
+
+    def test_53_large_coordinate_distance_2d(self):
+        self.assertAlmostEqual(distances([[1e9, 1e9]], [[1e9 + 3, 1e9 + 4]])[0, 0], 5.0)
+
+    def test_54_nonfinite_gradient_step(self):
+        for h in (np.nan, np.inf, -np.inf, 0, -1):
+            with self.subTest(h=h), self.assertRaises(ValueError):
+                grad(lambda x: np.sum(x*x), np.array([1.0]), h=h)
+
+    def test_55_nonfinite_jacobian_step(self):
+        for h in (np.nan, np.inf, -np.inf, 0, -1):
+            with self.subTest(h=h), self.assertRaises(ValueError):
+                jacobian(lambda x: x*x, np.array([1.0]), h=h)
+
+    def test_56_fit_x_only_transformer(self):
+        class Double:
+            def fit(self, X): return self
+            def transform(self, X): return np.asarray(X) * 2
+        pipe = Pipeline([('double', Double())])
+        np.testing.assert_array_equal(pipe.fit_transform([[1], [2]]), [[2], [4]])
+
+    def test_57_distance_shape_validation(self):
+        with self.assertRaises(ValueError):
+            distances([[1, 2]], [[1]])
+
 if __name__=="__main__":unittest.main()
