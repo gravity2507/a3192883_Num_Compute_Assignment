@@ -1,10 +1,15 @@
 
 import numpy as np
 
-def distances(X,Y):
+def distances(X, Y):
     
-    X=np.asarray(X,dtype=float);Y=np.asarray(Y,dtype=float)
-    return np.sqrt(np.maximum(np.sum(X**2,axis=1)[:,None]+np.sum(Y**2,axis=1)[None,:]-2*X@Y.T,0))
+    X = np.asarray(X, dtype=float)
+    Y = np.asarray(Y, dtype=float)
+    if X.ndim != 2 or Y.ndim != 2 or X.shape[1] != Y.shape[1]:
+        raise ValueError("X and Y must be 2D with equal feature counts")
+    if not np.isfinite(X).all() or not np.isfinite(Y).all():
+        raise ValueError("Distance inputs must contain finite values")
+    return np.sqrt(np.sum((X[:, None, :] - Y[None, :, :]) ** 2, axis=2))
 
 def logsumexp(x,axis=None):
     
@@ -19,5 +24,6 @@ def softmax(x,axis=-1):
     return z/np.sum(z,axis=axis,keepdims=True)
 
 def batches(X,size):
+    
     if size<1:raise ValueError("size must be positive")
     for i in range(0,len(X),size):yield X[i:i+size]
