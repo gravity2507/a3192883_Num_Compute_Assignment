@@ -1,23 +1,24 @@
-NumCompute
-A lightweight scientific computing toolkit built with Python and NumPy. NumCompute includes common numerical operations, data preprocessing, evaluation metrics, and a decision tree classifier that can learn from incoming batches of data.
+<img width="960" height="640" alt="accuracy" src="https://github.com/user-attachments/assets/05533a0c-2987-4d12-946c-1c9849acb4c6" />NumCompute
+A lightweight scientific computing and streaming machine learning toolkit built with Python and NumPy.
 
-The project was developed to explore how numerical algorithms and machine learning models work internally, without relying on high-level machine learning libraries.
+NumCompute implements reusable numerical operations, data preprocessing, evaluation metrics, and a decision tree classifier from scratch. The streaming extension processes observations in chunks and periodically retrains the tree using a configurable data buffer. The project is designed for learning and demonstrating the underlying algorithms without using high-level machine learning libraries.
+
 Features
-- Data handling: Read CSV files and process data in chunks.
-- Preprocessing: Standard scaling, min-max scaling, missing-value imputation, and one-hot encoding.
-- Numerical utilities: Sorting, top-k selection, ranking, percentiles, descriptive statistics, and finite-difference gradients.
-- Evaluation: Classification and regression metrics, including streaming updates.
+- CSV input: Read numeric CSV files and iterate through rows in chunks.
+- Preprocessing: Standard scaling, min-max scaling, missing-value imputation and one-hot encoding.
+- Numerical operations: Sorting, top-k selection, quickselect, binary search, ranking and percentiles.
+- Statistics and optimisation: Descriptive and streaming statistics, histograms, quantiles, finite-difference gradients and Jacobians.
+- Metrics: Classification and regression metrics, with cumulative evaluation for streaming predictions.
 - Decision tree: Classification using Gini impurity or entropy, with configurable depth and buffered retraining.
-- Streaming pipeline: Update preprocessing and model components as new data arrives.
-- Visualisation: Plot accuracy over time, compare models, and view predictions against actual labels.
-- Testing and benchmarks: Automated tests and performance comparisons.
+- Pipelines: Combine transformations and model training in reusable components.
+- Visualisation: Accuracy trends, model comparisons and predictions versus actual labels using Matplotlib.
+- Verification: Automated unit tests and performance benchmarks.
 Requirements
 - Python 3.9 or newer
 - NumPy
-- matplotlib
-No pandas or scikit-learn is required. Python's standard library is used for file handling, testing, and other utilities.
+- Matplotlib
+No pandas or scikit-learn is used. Testing uses Python's built-in unittest module.
 
-Project structure (WBS)
 NumCompute/
 ├── numcompute/
 │   ├── __init__.py
@@ -35,8 +36,7 @@ NumCompute/
 │   ├── stream.py
 │   └── visualise.py
 ├── data/
-│   ├── make_data.py
-│   └── stream_data.csv
+│   └── make_data.py
 ├── demo/
 │   ├── quickstart.ipynb
 │   ├── stream_demo.ipynb
@@ -50,3 +50,57 @@ NumCompute/
 │   └── buffer_comparison.png
 ├── pyproject.toml
 └── README.md
+
+Quick start
+Generate the demonstration dataset
+python data/make_data.py
+This creates data/stream_data.csv containing synthetic numerical features, binary labels and some missing values. The random seed is fixed for reproducibility.
+Run the streaming demonstration
+python demo/run_spyder.py
+The demonstration reads the CSV in chunks, applies preprocessing, updates the buffered decision tree and reports accuracy and retraining counts. It saves charts in results/.
+
+Spyder: Open demo/run_spyder.py, set the working directory to the NumCompute folder, and press F5. Generate the dataset first using data/make_data.py to avoid path issues on a fresh checkout.
+Use the decision tree in Python
+import numpy as np
+from numcompute.tree import DecisionTreeClassifier
+
+X = np.array([[0.0], [1.0], [2.0], [3.0]])
+y = np.array([0, 0, 1, 1])
+
+model = DecisionTreeClassifier(max_depth=3, buffer_size=4)
+model.partial_fit(X[:2], y[:2])  # Collect the first chunk
+model.partial_fit(X[2:], y[2:])  # Buffer threshold reached: train
+print(model.predict(np.array([[1.5], [2.5]])))
+partial_fit() adds samples to a buffer. When the buffer reaches the configured threshold, the tree is retrained on the buffered observations and the buffer is cleared. Between retraining events, predictions use the most recently trained tree. Predictions are unavailable before the first training event.
+Testing
+Run the complete suite from the project directory:
+python -m unittest discover -s tests -v
+The uploaded revision contains 57 unit tests. The tests cover core numerical functionality, streaming updates and regression cases for small nonconstant values, large-coordinate distances and invalid finite-difference steps. Passing tests help establish correctness for the covered cases, not every possible input.
+Benchmarking
+python demo/benchmarks.py
+The benchmark compares a Python-loop calculation with a NumPy-vectorised equivalent and evaluates decision trees with buffer sizes of 50, 100 and 200. It prints measured execution times, mean evaluated accuracy and retraining counts, and saves a comparison plot.
+
+Results depend on the machine and data. Buffer configurations may begin making predictions at different times, so their mean accuracies are not a controlled head-to-head comparison on identical evaluation samples.
+Visualisation results
+The repository includes example output images generated by the demonstration scripts.
+
+Streaming Accuracy
+<img width="960" height="640" alt="accuracy" src="https://github.com/user-attachments/assets/413e7eca-7fbe-4939-8027-86fd39f96091" />
+
+Predictions compared with actual labels
+<img width="960" height="640" alt="predictions" src="https://github.com/user-attachments/assets/4baf2f1a-2839-4b0c-a52a-c935bee9a4cf" />
+
+Buffer Size Comparision
+<img width="960" height="640" alt="buffer_comparison" src="https://github.com/user-attachments/assets/9094e648-220a-49b2-b64a-f6194c9a9f56" />
+
+Notebooks
+- demo/quickstart.ipynb — examples of the original numerical computing toolkit.
+- demo/stream_demo.ipynb — a notebook demonstration of chunk-wise learning and streaming performance.
+Design notes and limitations
+- The decision tree uses buffered batch retraining, not a fully online tree that updates individual nodes for every sample.
+- Model behaviour depends on buffer size, chunk order, data quality and the chosen hyperparameters.
+- Category growth in streaming one-hot encoding may change feature dimensions and requires care when integrating with a trained model.
+- The included dataset is synthetic and intended for demonstrating functionality, not validating real-world predictive performance.
+- Benchmark timing is environment-dependent; rerun benchmarks locally when comparing performance.
+Development and verification
+The code is organised into separate modules to keep numerical functions, streaming logic, visualisation and tests independent. Automated regression tests are used to check numerical stability and prevent previously identified issues from reappearing.
